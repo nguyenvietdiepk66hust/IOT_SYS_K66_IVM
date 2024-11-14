@@ -6,8 +6,6 @@
 #include <ModbusServer.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-
-// WiFi and Modbus settings
 const char* ssid = "your_ssid";
 const char* password = "your_password";
 IPAddress serverIP(192, 168, 1, 50); // Modbus client IP
@@ -51,7 +49,7 @@ void taskWriteSDCard(void *pvParameters) {
 }
 
 // Task 3: Send data to Modbus Client and clear SD card when done
-// Task 3: Send data to Modbus Client and clear SD card when done
+
 void Task3_SendToModbus(void *pvParameters) {
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
@@ -112,7 +110,7 @@ void setup() {
         Serial.println("Connecting to WiFi...");
     }
     Serial.println("WiFi connected.");
-
+    Serial.println(WiFi.localIP());
     // Start Modbus Server
     modbusServer.begin();
 
