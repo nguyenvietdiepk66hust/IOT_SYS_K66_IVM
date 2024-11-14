@@ -9,7 +9,10 @@
 const char* ssid = "your_ssid";
 const char* password = "your_password";
 IPAddress serverIP(192, 168, 1, 50); // Modbus client IP
-
+IPAddress local_IP(192, 168, 1, 186);  // Địa chỉ IP tĩnh
+IPAddress gateway(192, 168, 1, 1);     // Gateway (thường là router)
+IPAddress subnet(255, 255, 255, 0);    // Subnet Mask
+IPAddress dns(192, 168, 1, 1);         // DNS server (thường là địa chỉ router)
 ModbusTCPServer modbusServer;
 QueueHandle_t dataQueue;
 
@@ -104,14 +107,16 @@ void setup() {
     }
 
     // Start WiFi
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(1000);
-        Serial.println("Connecting to WiFi...");
-    }
-    Serial.println("WiFi connected.");
-    Serial.println(WiFi.localIP());
-    // Start Modbus Server
+  
+  // Kết nối Wi-Fi với địa chỉ IP tĩnh
+  WiFi.config(local_IP, gateway, subnet, dns);
+  WiFi.begin("SSID", "PASSWORD");  // Thay thế "SSID" và "PASSWORD" với thông tin mạng của bạn
+  
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+  Serial.println("WiFi connected.");
     modbusServer.begin();
 
     // Create tasks
