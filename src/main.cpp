@@ -13,6 +13,8 @@
 #include "sdmmc_cmd.h"
 #include "esp_vfs_fat.h"
 #include "esp_log.h"
+#include <ArduinoRS485.h>
+
 const char* ssid = "your_ssid";
 const char* password = "your_password";
 IPAddress serverIP(192, 168, 1, 50); // Modbus client IP
