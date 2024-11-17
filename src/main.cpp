@@ -24,7 +24,7 @@ IPAddress subnet(255, 255, 255, 0);    // Subnet Mask
 IPAddress dns(192, 168, 1, 1);         // DNS server (thường là địa chỉ router)
 ModbusTCPServer modbusServer;
 WebServer server(80);
-QueueHandle_t dataQueue;
+QueueHandle_t dataQueue = xQueueCreate(10, sizeof(int));
 #define TAG "SDMMC_Logger"
 #define FILENAME "/data.txt"
 // Data storage
