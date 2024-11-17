@@ -14,7 +14,7 @@
 #include "esp_vfs_fat.h"
 #include "esp_log.h"
 #include <ArduinoRS485.h>
-
+#include <WebServer.h>
 const char* ssid = "your_ssid";
 const char* password = "your_password";
 IPAddress serverIP(192, 168, 1, 50); // Modbus client IP
@@ -23,6 +23,7 @@ IPAddress gateway(192, 168, 1, 1);     // Gateway (thường là router)
 IPAddress subnet(255, 255, 255, 0);    // Subnet Mask
 IPAddress dns(192, 168, 1, 1);         // DNS server (thường là địa chỉ router)
 ModbusTCPServer modbusServer;
+WebServer server(80);
 QueueHandle_t dataQueue;
 #define TAG "SDMMC_Logger"
 #define FILENAME "/data.txt"
@@ -40,7 +41,7 @@ void taskReadSensor(void *pvParameters) {
     while (1) {
         mpu.getAcceleration(&sensorData.accelX, &sensorData.accelY, &sensorData.accelZ);
         xQueueSend(dataQueue, &sensorData, portMAX_DELAY);  // Send data to queue
-        vTaskDelay(100 / portTICK_PERIOD_MS);  // Adjust as needed
+        vTaskDelay(1 / portTICK_PERIOD_MS);  // Adjust as needed
     }
 }
 
@@ -53,9 +54,10 @@ void taskWriteSDCard(void *pvParameters) {
     gpio_set_pull_mode((gpio_num_t)2, GPIO_PULLUP_ONLY);  // D0
     gpio_set_pull_mode((gpio_num_t)4, GPIO_PULLUP_ONLY);  // D1
     gpio_set_pull_mode((gpio_num_t)12, GPIO_PULLUP_ONLY); // D2
-
+    gpio_set_pull_mode((gpio_num_t)11, GPIO_PULLUP_ONLY); // CMD
+    gpio_set_pull_mode((gpio_num_t)6, GPIO_PULLUP_ONLY); // CLK
     // Cấu hình SDMMC
-    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
+        esp_vfs_fat_sdmmc_mount_config_t mount_config = {
         .format_if_mount_failed = false,
         .max_files = 5,
         .allocation_unit_size = 16 * 1024
@@ -92,12 +94,13 @@ void taskWriteSDCard(void *pvParameters) {
             }
         }
     }
+    vTaskDelay(0.5/portTICK_PERIOD_MS);
 }
 
 
 // Task 3: Send data to Modbus Client and clear SD card when done
 
-void Task3_SendToModbus(void *pvParameters) {
+void taskSendToModbus(void *pvParameters) {
     WiFi.begin(ssid, password);
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
@@ -121,8 +124,7 @@ void Task3_SendToModbus(void *pvParameters) {
                 // Write values to Modbus holding registers
                 modbusServer.holdingRegisterWrite(registerAddress, accelX);  // Register for AccelX
                 modbusServer.holdingRegisterWrite(registerAddress + 1, accelY);  // Register for AccelY
-                modbusServer.holdingRegisterWrite(registerAddress + 2, accelZ);  // Register for AccelZ
-
+                modbusServer.holdingRegisterWrite(registerAddress + 2, accelZ);  // Register for AccelZ                
                 registerAddress += 3;  // Advance to next set of registers if needed
             }
             file.close();
@@ -135,42 +137,93 @@ void Task3_SendToModbus(void *pvParameters) {
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
+void handleRoot();
+void handleUpdate();
+void try_to_connect_wifi(){
+    WiFi.begin(ssid, password);
+    WiFi.config(local_IP, gateway, subnet, dns);
+  Serial.println("Connecting to WiFi...");
+    unsigned long startTime = millis();
+  while (WiFi.status() != WL_CONNECTED) {
+    if (millis() - startTime > 5000) { // Nếu quá 5 giây
+      Serial.println("Kết nối thất bại!");
+      break;
+    }
+    delay(500);
+    Serial.print(".");
+  }
 
-
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("Kết nối thành công!");
+  }
+}
 void setup() {
     Serial.begin(115200);
+    server.on("/", handleRoot);
+    server.on("/update", handleUpdate);
+    server.begin();
+    Serial.println("Server started!");
     if (!mpu.testConnection()) {
         Serial.println("MPU6050 initialization failed!");
         while (1);
     }
-
+    try_to_connect_wifi();
     // Initialize SD card
     if (!SD_MMC.begin()) {
         Serial.println("SD Card Mount Failed");
         return;
     }
-
-    // Start WiFi
-  
-  // Kết nối Wi-Fi với địa chỉ IP tĩnh
-  WiFi.config(local_IP, gateway, subnet, dns);
-  WiFi.begin("SSID", "PASSWORD");  // Thay thế "SSID" và "PASSWORD" với thông tin mạng của bạn
-  
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.println("Connecting to WiFi...");
-  }
-  Serial.println("WiFi connected.");
+    server.on("/", handleRoot);
+    server.on("/update", handleUpdate);
+    server.begin();
+    Serial.println("Server started!");
     modbusServer.begin();
-
     // Create tasks
     dataQueue = xQueueCreate(10, sizeof(SensorData));
     xTaskCreate(taskReadSensor, "Task1_ReadMPU6050", 2048, NULL, 1, &task1Handle);
     xTaskCreate(taskWriteSDCard, "Task2_WriteToSD", 2048, NULL, 1, &task2Handle);
-    xTaskCreate(Task3_SendToModbus, "Task3_SendToModbus", 2048, NULL, 1, &task3Handle);
+    xTaskCreate(taskSendToModbus, "Task3_SendToModbus", 2048, NULL, 1, &task3Handle);
 }
 
 void loop() {
-    // FreeRTOS handles the tasks; nothing needed here
+     server.handleClient();
+}
+
+void handleRoot() {
+  String html = "<html><body>"
+                "<h1>Cấu hình Wi-Fi</h1>"
+                "<form action='/update' method='POST'>"
+                "SSID: <input type='text' name='ssid'><br>"
+                "Password: <input type='text' name='password'><br>"
+                "<input type='submit' value='Cập nhật Wi-Fi'>"
+                "</form>"
+                "</body></html>";
+  server.send(200, "text/html", html);
+}
+
+void handleUpdate() {
+  if (server.hasArg("ssid") && server.hasArg("password")) {
+    String newSSID = server.arg("ssid");
+    String newPassword = server.arg("password");
+
+    WiFi.disconnect();
+    WiFi.begin(newSSID.c_str(), newPassword.c_str());
+
+    server.send(200, "text/html", "<html><body><h1>Đang kết nối lại...</h1></body></html>");
+
+    Serial.println("Đang kết nối lại với Wi-Fi mới...");
+    unsigned long reconnectTime = millis();
+    while (WiFi.status() != WL_CONNECTED) {
+      if (millis() - reconnectTime > 5000) { // Nếu quá 5 giây
+        Serial.println("Kết nối thất bại với thông tin mới!");
+        return;
+      }
+      delay(500);
+    }
+
+    Serial.println("Kết nối thành công với Wi-Fi mới!");
+  } else {
+    server.send(400, "text/html", "Thiếu thông tin SSID hoặc mật khẩu!");
+  }
 }
 
