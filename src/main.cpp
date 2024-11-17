@@ -24,7 +24,7 @@ IPAddress subnet(255, 255, 255, 0);    // Subnet Mask
 IPAddress dns(192, 168, 1, 1);         // DNS server (thường là địa chỉ router)
 ModbusTCPServer modbusServer;
 WebServer server(80);
-QueueHandle_t dataQueue = xQueueCreate(10, sizeof(int));
+QueueHandle_t dataQueue = xQueueCreate(10, sizeof(SensorData));
 #define TAG "SDMMC_Logger"
 #define FILENAME "/data.txt"
 // Data storage
@@ -125,18 +125,18 @@ void handleUpdate();
 void try_to_connect_wifi(){
     WiFi.begin(ssid, password);
     WiFi.config(local_IP, gateway, subnet, dns);
-  Serial.println("Connecting to WiFi...");
+    Serial.println("Connecting to WiFi...");
     unsigned long startTime = millis();
-  while (WiFi.status() != WL_CONNECTED) {
-    if (millis() - startTime > 5000) { // Nếu quá 5 giây
-      Serial.println("Kết nối thất bại!");
-      break;
+      while (WiFi.status() != WL_CONNECTED) {
+        if (millis() - startTime > 5000) { // Nếu quá 5 giây
+        Serial.println("Kết nối thất bại!");
+        break;
     }
-    delay(500);
+        delay(500);
     Serial.print(".");
   }
 
-  if (WiFi.status() == WL_CONNECTED) {
+    if (WiFi.status() == WL_CONNECTED) {
     Serial.println("Kết nối thành công!");
   }
 }
@@ -162,7 +162,6 @@ void setup() {
     Serial.println("Server started!");
     modbusServer.begin();
     // Create tasks
-    dataQueue = xQueueCreate(10, sizeof(SensorData));
     xTaskCreate(taskReadSensor, "Task1_ReadMPU6050", 2048, NULL, 1, &task1Handle);
     xTaskCreate(taskWriteSDCard, "Task2_WriteToSD", 2048, NULL, 1, &task2Handle);
     xTaskCreate(taskSendToModbus, "Task3_SendToModbus", 2048, NULL, 1, &task3Handle);
