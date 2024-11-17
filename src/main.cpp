@@ -91,15 +91,8 @@ void taskWriteSDCard(void *pvParameters) {
 // Task 3: Send data to Modbus Client and clear SD card when done
 
 void taskSendToModbus(void *pvParameters) {
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-    Serial.println("WiFi connected.");
-
+   try_to_connect_wifi();
     modbusServer.begin(502);  // Set up Modbus server on port 502
-
     while (1) {
         File file = SD_MMC.open("/data.txt", FILE_READ);
         if (file) {
