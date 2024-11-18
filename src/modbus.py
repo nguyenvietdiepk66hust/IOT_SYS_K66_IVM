@@ -1,5 +1,5 @@
 import mysql.connector
-from pymodbus.client.sync import ModbusTcpClient # type: ignore
+from pymodbus.client import ModbusTcpClient
 import time
 
 # 1. Kết nối Modbus
