@@ -3,7 +3,7 @@ from pymodbus.client.sync import ModbusTcpClient # type: ignore
 import time
 
 # 1. Kết nối Modbus
-def connect_modbus(host='127.0.0.1', port=502):
+def connect_modbus(host=' ', port=502):
     client = ModbusTcpClient(host, port)
     if client.connect():
         print("Kết nối Modbus thành công!")
