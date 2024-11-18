@@ -1,3 +1,4 @@
+# tạo bảng trước khi chạy code
 CREATE DATABASE modbus_data;
 
 USE modbus_data;
