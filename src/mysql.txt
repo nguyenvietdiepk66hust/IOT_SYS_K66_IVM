@@ -1,0 +1,9 @@
+CREATE DATABASE modbus_data;
+
+USE modbus_data;
+
+CREATE TABLE modbus_readings (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    reading_value INT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
