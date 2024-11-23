@@ -24,7 +24,7 @@ IPAddress subnet(255, 255, 255, 0);    // Subnet Mask
 IPAddress dns(192, 168, 1, 1);         // DNS server (thường là địa chỉ router)
 ModbusTCPServer modbusServer;
 WebServer server(80);
-QueueHandle_t dataQueue = xQueueCreate(10, sizeof(SensorData));
+QueueHandle_t dataQueue;
 #define TAG "SDMMC_Logger"
 #define FILENAME "/data.txt"
 // Data storage
@@ -34,7 +34,7 @@ TaskHandle_t task1Handle, task2Handle, task3Handle;
 struct SensorData {
     int16_t accelX, accelY, accelZ;
 };
-
+ void  try_to_connect_wifi();
 // Task 1: Read data from MPU6050
 void taskReadSensor(void *pvParameters) {
     SensorData sensorData;
@@ -66,7 +66,7 @@ void taskWriteSDCard(void *pvParameters) {
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
     adc1_config_width(ADC_WIDTH_BIT_12);
-    adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11); // Đọc từ GPIO5
+    //adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11); // Đọc từ GPIO5
     esp_err_t ret = esp_vfs_fat_sdmmc_mount(mount_point, &host, &slot_config, &mount_config, &card);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Không thể gắn thẻ nhớ: %s", esp_err_to_name(ret));
@@ -162,6 +162,7 @@ void setup() {
     Serial.println("Server started!");
     modbusServer.begin();
     // Create tasks
+    QueueHandle_t dataQueue = xQueueCreate(10, sizeof(SensorData));
     xTaskCreate(taskReadSensor, "Task1_ReadMPU6050", 2048, NULL, 1, &task1Handle);
     xTaskCreate(taskWriteSDCard, "Task2_WriteToSD", 2048, NULL, 1, &task2Handle);
     xTaskCreate(taskSendToModbus, "Task3_SendToModbus", 2048, NULL, 1, &task3Handle);
