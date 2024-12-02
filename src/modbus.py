@@ -1,45 +1,61 @@
-import mysql.connector
-from pymodbus.client import ModbusTcpClient
 import time
+from pymodbus.client import ModbusTcpClient
+import mysql.connector
 
-# 1. Kết nối Modbus
-def connect_modbus(host=' ', port=502):
-    client = ModbusTcpClient(host, port)
+# Kết nối Modbus
+def connect_modbus():
+    client = ModbusTcpClient('192.168.0.150')  # Địa chỉ IP của thiết bị Modbus
     if client.connect():
         print("Kết nối Modbus thành công!")
+        return client
     else:
-        print("Kết nối Modbus thất bại.")
-    return client
-
-# 2. Đọc dữ liệu từ Modbus
-def read_modbus_data(client):
-    # Giả sử bạn đọc các thanh ghi 16-bit (holding registers) từ địa chỉ 0, số lượng 10
-    result = client.read_holding_registers(0, 10, unit=1)
-    if result.isError():
-        print("Lỗi khi đọc dữ liệu Modbus.")
+        print("Không thể kết nối đến Modbus.")
         return None
-    return result.registers  # Trả về danh sách các thanh ghi đọc được
 
-# 3. Kết nối MySQL
+# Kết nối MySQL
 def connect_mysql():
-    connection = mysql.connector.connect(
-        host='localhost',         # Địa chỉ của MySQL
-        user='root',              # Tên người dùng
-        password='',      # Mật khẩu
-        database='modbus_data'    # Tên cơ sở dữ liệu
-    )
-    return connection
+    try:
+        connection = mysql.connector.connect(
+            host='localhost',
+            user='root',         # Tên người dùng MySQL
+            password='', # Mật khẩu người dùng MySQL
+            database='modbus_data' # Tên cơ sở dữ liệu
+        )
+        print("Kết nối MySQL thành công!")
+        return connection
+    except mysql.connector.Error as err:
+        print(f"Lỗi kết nối MySQL: {err}")
+        return None
 
-# 4. Lưu dữ liệu vào cơ sở dữ liệu MySQL
-def save_to_mysql(data, connection):
-    cursor = connection.cursor()
-    for value in data:
-        # Giả sử chúng ta lưu dữ liệu vào bảng "modbus_readings" có các cột "reading_value" và "timestamp"
-        cursor.execute("INSERT INTO modbus_readings (reading_value, timestamp) VALUES (%s, NOW())", (value,))
-    connection.commit()
-    print(f"Đã lưu {len(data)} giá trị vào cơ sở dữ liệu.")
+# Đọc dữ liệu từ Modbus (giả sử bạn muốn đọc 2 thanh ghi từ địa chỉ 0)
+def read_modbus_data(client):
+    try:
+        result = client.read_holding_registers(0, 2)  # Đọc 2 thanh ghi từ địa chỉ 0
+        if result.isError():
+            print("Lỗi khi đọc dữ liệu từ Modbus")
+            return None
+        else:
+            # Lấy giá trị của 2 thanh ghi
+            register1 = result.registers[0]
+            register2 = result.registers[1]
+            return register1, register2
+    except Exception as e:
+        print(f"Lỗi trong quá trình đọc Modbus: {e}")
+        return None
 
-# 5. Chạy chương trình
+# Lưu dữ liệu vào MySQL
+def save_to_mysql(register1, register2, connection):
+    try:
+        cursor = connection.cursor()
+        # Thực hiện truy vấn SQL để lưu dữ liệu
+        query = "INSERT INTO modbus_data (register1, register2, timestamp) VALUES (%s, %s, NOW())"
+        cursor.execute(query, (register1, register2))
+        connection.commit()  # Lưu thay đổi vào cơ sở dữ liệu
+        print(f"Đã lưu dữ liệu: Register1 = {register1}, Register2 = {register2}")
+    except mysql.connector.Error as err:
+        print(f"Lỗi khi lưu vào MySQL: {err}")
+
+# Chạy chương trình chính
 def main():
     # Kết nối Modbus
     modbus_client = connect_modbus()
@@ -48,14 +64,18 @@ def main():
 
     # Kết nối MySQL
     mysql_connection = connect_mysql()
+    if not mysql_connection:
+        return
 
     try:
         while True:
             # Đọc dữ liệu từ Modbus
             data = read_modbus_data(modbus_client)
             if data:
-                # Lưu dữ liệu vào cơ sở dữ liệu
-                save_to_mysql(data, mysql_connection)
+                register1, register2 = data
+                # Lưu dữ liệu vào MySQL
+                save_to_mysql(register1, register2, mysql_connection)
+            
             # Chờ 5 giây trước khi đọc lại dữ liệu
             time.sleep(5)
 
