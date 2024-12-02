@@ -1,15 +1,4 @@
-/*
 
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/*=====================================================================================
- * Description:
- *   The Modbus parameter structures used to define Modbus instances that
- *   can be addressed by Modbus protocol. Define these structures per your needs in
- *   your application. Below is just an example of possible parameters.
- *====================================================================================*/
 #ifndef _DEVICE_PARAMS
 #define _DEVICE_PARAMS
 
