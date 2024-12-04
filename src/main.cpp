@@ -23,6 +23,10 @@
 #include "modbus_params.h"  // for modbus parameters structures
 #include "mbcontroller.h"
 #include "sdkconfig.h"
+#include <WiFi.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncTCP.h>
+#include "LittleFS.h"
 // define zone: khoi tao cac bien trong chuong trinh
 #define MASTER_MAX_CIDS num_device_parameters
 
@@ -173,24 +177,28 @@ mb_parameter_descriptor_t device_parameters[] = {
     { CID_XAXIS_1,         STR("Register_1_Slave_1"), STR("Hz"), MB_DEVICE_ADDR1, MB_PARAM_HOLDING, 0,          1,      0,      PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
     { CID_YAXIS_1,         STR("Register_2_Slave_1"), STR("Hz"), MB_DEVICE_ADDR1, MB_PARAM_HOLDING, 1,          1,      2,      PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
     { CID_ZAXYS_1,         STR("Register_3_Slave_1"), STR("Hz"), MB_DEVICE_ADDR1, MB_PARAM_HOLDING, 2,          1,      4,      PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_TEMP_1,          STR("Register_4_Slave_1"), STR("C"), MB_DEVICE_ADDR1, MB_PARAM_HOLDING,  3,           1,      6,      PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                     PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_TEMP_1,          STR("Register_4_Slave_1"), STR("C"), MB_DEVICE_ADDR1, MB_PARAM_HOLDING,  3,           1,      6,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
     
-    { CID_XAXIS_2,         STR("Register_1_Slave_2"), STR("Hz"), MB_DEVICE_ADDR2, MB_PARAM_HOLDING, 0,          1,      8,      PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_YAXIS_2,         STR("Register_2_Slave_2"), STR("Hz"), MB_DEVICE_ADDR2, MB_PARAM_HOLDING, 1,          1,      10,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_ZAXYS_2,         STR("Register_3_Slave_2"), STR("Hz"), MB_DEVICE_ADDR2, MB_PARAM_HOLDING, 2,          1,      12,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_TEMP_2,          STR("Register_4_Slave_2"), STR("C"), MB_DEVICE_ADDR2, MB_PARAM_HOLDING,  3,          1,      14,      PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                     PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_XAXIS_2,         STR("Register_1_Slave_2"), STR("Hz"), MB_DEVICE_ADDR2, MB_PARAM_HOLDING, 4,          1,      8,      PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_YAXIS_2,         STR("Register_2_Slave_2"), STR("Hz"), MB_DEVICE_ADDR2, MB_PARAM_HOLDING, 5,          1,      10,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_ZAXYS_2,         STR("Register_3_Slave_2"), STR("Hz"), MB_DEVICE_ADDR2, MB_PARAM_HOLDING, 6,          1,      12,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_TEMP_2,          STR("Register_4_Slave_2"), STR("C"), MB_DEVICE_ADDR2, MB_PARAM_HOLDING,  7,          1,      14,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
 
-    { CID_XAXIS_3,         STR("Register_1_Slave_3"), STR("Hz"), MB_DEVICE_ADDR3, MB_PARAM_HOLDING, 0,          1,      16,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_YAXIS_3,         STR("Register_2_Slave_3"), STR("Hz"), MB_DEVICE_ADDR3, MB_PARAM_HOLDING, 1,          1,      18,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_ZAXYS_3,         STR("Register_3_Slave_3"), STR("Hz"), MB_DEVICE_ADDR3, MB_PARAM_HOLDING, 2,          1,      20,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_TEMP_3,          STR("Register_4_Slave_3"), STR("C"), MB_DEVICE_ADDR3, MB_PARAM_HOLDING,  3,          1,      22,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_XAXIS_3,         STR("Register_1_Slave_3"), STR("Hz"), MB_DEVICE_ADDR3, MB_PARAM_HOLDING, 8,          1,       16,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_YAXIS_3,         STR("Register_2_Slave_3"), STR("Hz"), MB_DEVICE_ADDR3, MB_PARAM_HOLDING, 9,          1,       18,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_ZAXYS_3,         STR("Register_3_Slave_3"), STR("Hz"), MB_DEVICE_ADDR3, MB_PARAM_HOLDING, 10,          1,      20,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_TEMP_3,          STR("Register_4_Slave_3"), STR("C"), MB_DEVICE_ADDR3, MB_PARAM_HOLDING,  11,          1,      22,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
 
+    { CID_XAXIS_4,         STR("Register_1_Slave_4"), STR("Hz"), MB_DEVICE_ADDR3, MB_PARAM_HOLDING, 12,          1,      24,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_YAXIS_4,         STR("Register_2_Slave_4"), STR("Hz"), MB_DEVICE_ADDR3, MB_PARAM_HOLDING, 13,          1,      26,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_ZAXYS_4,         STR("Register_3_Slave_4"), STR("Hz"), MB_DEVICE_ADDR3, MB_PARAM_HOLDING, 14,          1,      28,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_TEMP_4,          STR("Register_4_Slave_4"), STR("C"), MB_DEVICE_ADDR3, MB_PARAM_HOLDING,  15,          1,      30,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                      PAR_PERMS_READ_WRITE_TRIGGER },
     // Tiếp tục cho đến CID_TEMP_16 theo cùng cấu trúc...
     
-    { CID_XAXIS_16,        STR("Register_1_Slave_16"), STR("--"), MB_DEVICE_ADDR16, MB_PARAM_HOLDING, 0,        1,      60,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                       PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_YAXIS_16,        STR("Register_2_Slave_16"), STR("--"), MB_DEVICE_ADDR16, MB_PARAM_HOLDING, 1,        1,      62,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                       PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_ZAXYS_16,        STR("Register_3_Slave_16"), STR("--"), MB_DEVICE_ADDR16, MB_PARAM_HOLDING, 2,        1,      64,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                       PAR_PERMS_READ_WRITE_TRIGGER },
-    { CID_TEMP_16,         STR("Register_4_Slave_16"), STR("--"), MB_DEVICE_ADDR16, MB_PARAM_HOLDING, 3,        1,      66,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                       PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_XAXIS_16,        STR("Register_1_Slave_16"), STR("--"), MB_DEVICE_ADDR16, MB_PARAM_HOLDING, 16,        1,      60,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                       PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_YAXIS_16,        STR("Register_2_Slave_16"), STR("--"), MB_DEVICE_ADDR16, MB_PARAM_HOLDING, 17,        1,      62,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                       PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_ZAXYS_16,        STR("Register_3_Slave_16"), STR("--"), MB_DEVICE_ADDR16, MB_PARAM_HOLDING, 18,        1,      64,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                       PAR_PERMS_READ_WRITE_TRIGGER },
+    { CID_TEMP_16,         STR("Register_4_Slave_16"), STR("--"), MB_DEVICE_ADDR16, MB_PARAM_HOLDING, 19,        1,      66,     PARAM_TYPE_FLOAT, PARAM_MAX_SIZE,                       PAR_PERMS_READ_WRITE_TRIGGER },
 };
 
 const uint16_t num_device_parameters = (sizeof(device_parameters)/sizeof(device_parameters[0]));
@@ -733,9 +741,247 @@ void app_main(void)
     ESP_ERROR_CHECK(master_destroy());
     ESP_ERROR_CHECK(destroy_services());
 }
-void setup()
-{
-    
+
+
+/*Phan setup wifi cho master
+Đầu tiên cần phải cấu hình IP cho master, sau đó ta sẽ khỏi tạo các file dữ liệu cho web nhằm mục đích
+sửa địa chỉ và mật khẩu wifi khi mât kết nối 
+Link tham khảo: https://randomnerdtutorials.com/esp32-wi-fi-manager-asyncwebserver/*/
+
+// Create AsyncWebServer object on port 80
+AsyncWebServer server(80);
+
+// Search for parameter in HTTP POST request
+const char* PARAM_INPUT_1 = "ssid";
+const char* PARAM_INPUT_2 = "pass";
+const char* PARAM_INPUT_3 = "ip";
+const char* PARAM_INPUT_4 = "gateway";
+
+//Variables to save values from HTML form
+String ssid;
+String pass;
+String ip;
+String gateway;
+
+// File paths to save input values permanently
+const char* ssidPath = "/ssid.txt";
+const char* passPath = "/pass.txt";
+const char* ipPath = "/ip.txt";
+const char* gatewayPath = "/gateway.txt";
+
+IPAddress localIP;
+//IPAddress localIP(192, 168, 1, 200); // hardcoded
+
+// Set your Gateway IP address
+IPAddress localGateway;
+//IPAddress localGateway(192, 168, 1, 1); //hardcoded
+IPAddress subnet(255, 255, 0, 0);
+
+// Timer variables
+unsigned long previousMillis = 0;
+const long interval = 10000;  // interval to wait for Wi-Fi connection (milliseconds)
+
+// Set LED GPIO
+const int ledPin = 2;
+// Stores LED state
+
+String ledState;
+
+// Initialize LittleFS
+void initLittleFS() {
+  if (!LittleFS.begin(true)) {
+    Serial.println("An error has occurred while mounting LittleFS");
+  }
+  Serial.println("LittleFS mounted successfully");
 }
-void loop()
-{}
+
+// Read File from LittleFS
+String readFile(fs::FS &fs, const char * path){
+  Serial.printf("Reading file: %s\r\n", path);
+
+  File file = fs.open(path);
+  if(!file || file.isDirectory()){
+    Serial.println("- failed to open file for reading");
+    return String();
+  }
+  
+  String fileContent;
+  while(file.available()){
+    fileContent = file.readStringUntil('\n');
+    break;     
+  }
+  return fileContent;
+}
+
+// Write file to LittleFS
+void writeFile(fs::FS &fs, const char * path, const char * message){
+  Serial.printf("Writing file: %s\r\n", path);
+
+  File file = fs.open(path, FILE_WRITE);
+  if(!file){
+    Serial.println("- failed to open file for writing");
+    return;
+  }
+  if(file.print(message)){
+    Serial.println("- file written");
+  } else {
+    Serial.println("- write failed");
+  }
+}
+
+// Initialize WiFi
+bool initWiFi() {
+  if(ssid=="" || ip==""){
+    Serial.println("Undefined SSID or IP address.");
+    return false;
+  }
+
+  WiFi.mode(WIFI_STA);
+  localIP.fromString(ip.c_str());
+  localGateway.fromString(gateway.c_str());
+
+
+  if (!WiFi.config(localIP, localGateway, subnet)){
+    Serial.println("STA Failed to configure");
+    return false;
+  }
+  WiFi.begin(ssid.c_str(), pass.c_str());
+  Serial.println("Connecting to WiFi...");
+
+  unsigned long currentMillis = millis();
+  previousMillis = currentMillis;
+
+  while(WiFi.status() != WL_CONNECTED) {
+    currentMillis = millis();
+    if (currentMillis - previousMillis >= interval) {
+      Serial.println("Failed to connect.");
+      return false;
+    }
+  }
+
+  Serial.println(WiFi.localIP());
+  return true;
+}
+
+// Replaces placeholder with LED state value
+String processor(const String& var) {
+  if(var == "STATE") {
+    if(digitalRead(ledPin)) {
+      ledState = "ON";
+    }
+    else {
+      ledState = "OFF";
+    }
+    return ledState;
+  }
+  return String();
+}
+
+void setup() {
+  // Serial port for debugging purposes
+  Serial.begin(115200);
+
+  initLittleFS();
+
+  // Set GPIO 2 as an OUTPUT
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(ledPin, LOW);
+  
+  // Load values saved in LittleFS
+  ssid = readFile(LittleFS, ssidPath);
+  pass = readFile(LittleFS, passPath);
+  ip = readFile(LittleFS, ipPath);
+  gateway = readFile (LittleFS, gatewayPath);
+  Serial.println(ssid);
+  Serial.println(pass);
+  Serial.println(ip);
+  Serial.println(gateway);
+
+  if(initWiFi()) {
+    // Route for root / web page
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+      request->send(LittleFS, "/index.html", "text/html", false, processor);
+    });
+    server.serveStatic("/", LittleFS, "/");
+    
+    // Route to set GPIO state to HIGH
+    server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request) {
+      digitalWrite(ledPin, HIGH);
+      request->send(LittleFS, "/index.html", "text/html", false, processor);
+    });
+
+    // Route to set GPIO state to LOW
+    server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request) {
+      digitalWrite(ledPin, LOW);
+      request->send(LittleFS, "/index.html", "text/html", false, processor);
+    });
+    server.begin();
+  }
+  else {
+    // Connect to Wi-Fi network with SSID and password
+    Serial.println("Setting AP (Access Point)");
+    // NULL sets an open Access Point
+    WiFi.softAP("ESP-WIFI-MANAGER", NULL);
+
+    IPAddress IP = WiFi.softAPIP();
+    Serial.print("AP IP address: ");
+    Serial.println(IP); 
+
+    // Web Server Root URL
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+      request->send(LittleFS, "/wifimanager.html", "text/html");
+    });
+    
+    server.serveStatic("/", LittleFS, "/");
+    
+    server.on("/", HTTP_POST, [](AsyncWebServerRequest *request) {
+      int params = request->params();
+      for(int i=0;i<params;i++){
+        const AsyncWebParameter* p = request->getParam(i);
+        if(p->isPost()){
+          // HTTP POST ssid value
+          if (p->name() == PARAM_INPUT_1) {
+            ssid = p->value().c_str();
+            Serial.print("SSID set to: ");
+            Serial.println(ssid);
+            // Write file to save value
+            writeFile(LittleFS, ssidPath, ssid.c_str());
+          }
+          // HTTP POST pass value
+          if (p->name() == PARAM_INPUT_2) {
+            pass = p->value().c_str();
+            Serial.print("Password set to: ");
+            Serial.println(pass);
+            // Write file to save value
+            writeFile(LittleFS, passPath, pass.c_str());
+          }
+          // HTTP POST ip value
+          if (p->name() == PARAM_INPUT_3) {
+            ip = p->value().c_str();
+            Serial.print("IP Address set to: ");
+            Serial.println(ip);
+            // Write file to save value
+            writeFile(LittleFS, ipPath, ip.c_str());
+          }
+          // HTTP POST gateway value
+          if (p->name() == PARAM_INPUT_4) {
+            gateway = p->value().c_str();
+            Serial.print("Gateway set to: ");
+            Serial.println(gateway);
+            // Write file to save value
+            writeFile(LittleFS, gatewayPath, gateway.c_str());
+          }
+          //Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
+        }
+      }
+      request->send(200, "text/plain", "Done. ESP will restart, connect to your router and go to IP address: " + ip);
+      delay(3000);
+      ESP.restart();
+    });
+    server.begin();
+  }
+}
+
+void loop() {
+
+}
