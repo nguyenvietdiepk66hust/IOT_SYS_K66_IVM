@@ -93,7 +93,7 @@ typedef struct {
     uint16_t            param_offset;       /*!< Parameter name (OFFSET in the parameter structure) */
     mb_descr_type_t     param_type;         /*!< Float, U8, U16, U32, ASCII, etc. */
     mb_descr_size_t     param_size;         /*!< Number of bytes in the parameter. */
-    mb_parameter_opt_t  param_opts;         /*!< Parameter options used to check limits and etc. */
+    //mb_parameter_opt_t  param_opts;         /*!< Parameter options used to check limits and etc. */
     mb_param_perms_t    access;             /*!< Access permissions based on mode */
 } mb_parameter_descriptor_t;
 
