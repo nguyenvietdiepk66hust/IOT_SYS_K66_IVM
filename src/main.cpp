@@ -17,6 +17,7 @@
 
 void setup() {
  Serial.begin(115200);
+ vTaskDelay(3/portTICK_PERIOD_MS);
  // || Creation           ||     Task function         ||     PC name             || heap size  || Parameter || Priority  || Task handle     || CoreID   ||
 xTaskCreatePinnedToCore(  Wifi_Task_Func      , "atApp_Wifi_Application"        ,  10000      ,     NULL    ,   1       , &Task_atApp_Wifi      ,    1     );
 
