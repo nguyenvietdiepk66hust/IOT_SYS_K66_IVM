@@ -45,17 +45,21 @@ def read_modbus_data(client):
 def save_to_mysql(registers_group, slave_number, connection):
     try:
         cursor = connection.cursor()
-        
+
+        # Chia các giá trị trong registers_group cho 10 trước khi lưu
+        registers_group_scaled = [value / 10.0 for value in registers_group]
+
         # Xác định tên bảng tương ứng với slave_number
         table_name = f"slave{slave_number}"
-        
+
         # Thực hiện truy vấn SQL để lưu dữ liệu vào bảng tương ứng
         query = f"INSERT INTO {table_name} (x, y, z, temperature, time) VALUES (%s, %s, %s, %s, NOW())"
-        cursor.execute(query, registers_group)
+        cursor.execute(query, registers_group_scaled)
         connection.commit()  # Lưu thay đổi vào cơ sở dữ liệu
-        print(f"Đã lưu dữ liệu vào {table_name}: {registers_group}")
+        print(f"Đã lưu dữ liệu vào {table_name}: {registers_group_scaled}")
     except mysql.connector.Error as err:
         print(f"Lỗi khi lưu vào MySQL: {err}")
+
 
 # Chạy chương trình chính
 def main():
