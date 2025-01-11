@@ -33,7 +33,7 @@ const int FrequencyY_REGISTER_ADDRESS = 1;
 const int FrequencyZ_REGISTER_ADDRESS = 2;
 void setup() {
   Serial.begin(115200);
-  WiFi.begin("Quan Dao", "12022022");
+  WiFi.begin("TP-Link_4F65", "03518441");
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi...");
